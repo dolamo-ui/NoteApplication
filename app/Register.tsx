@@ -7,11 +7,11 @@ import {
   StyleSheet,
   Alert,
 } from "react-native";
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Link } from "expo-router";
+import Icon from "react-native-vector-icons/FontAwesome";
+import { Link } from "expo-router"; // ✅ Expo Router Link
 
 type RootStackParamList = {
   Login: undefined;
@@ -23,6 +23,15 @@ type RegisterScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "Register"
 >;
+
+interface User {
+  email: string;
+  username: string;
+  password: string;
+}
+
+const USERS_KEY = "users_v1";
+const LOGGED_IN_KEY = "loggedInUser_v1";
 
 const Register = () => {
   const navigation = useNavigation<RegisterScreenNavigationProp>();
@@ -59,66 +68,78 @@ const Register = () => {
 
     if (!valid) return;
 
-    const userData = { email, username, password };
+    const newUser: User = { email, username, password };
 
     try {
-      await AsyncStorage.setItem("user", JSON.stringify(userData));
-     
+      const raw = await AsyncStorage.getItem(USERS_KEY);
+      const users: User[] = raw ? JSON.parse(raw) : [];
+
+      const exists = users.find((u) => u.email === email.trim());
+      if (exists) {
+        return Alert.alert("Email Taken", "This email is already registered.");
+      }
+
+      await AsyncStorage.setItem(
+        USERS_KEY,
+        JSON.stringify([...users, newUser])
+      );
+      await AsyncStorage.setItem(LOGGED_IN_KEY, JSON.stringify(newUser));
       navigation.navigate("Notes");
     } catch (error) {
+      console.error(error);
       Alert.alert("Error", "Something went wrong while saving your account.");
     }
   };
+
+  const renderInput = (
+    iconName: string,
+    placeholder: string,
+    value: string,
+    onChangeText: (text: string) => void,
+    secureTextEntry = false
+  ) => (
+    <View style={styles.inputContainer}>
+      <Icon name={iconName} size={20} color="#888" style={styles.icon} />
+      <TextInput
+        style={styles.inputWithIcon}
+        placeholder={placeholder}
+        placeholderTextColor="#aaa"
+        value={value}
+        onChangeText={onChangeText}
+        secureTextEntry={secureTextEntry}
+        autoCapitalize="none"
+      />
+    </View>
+  );
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Create Account</Text>
 
       {/* Email */}
-      <Text style={styles.label}>Email</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your email"
-        placeholderTextColor="#aaa"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
+      {renderInput("envelope", "Email", email, setEmail)}
       {emailError ? <Text style={styles.error}>{emailError}</Text> : null}
 
       {/* Username */}
-      <Text style={styles.label}>Username</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your username"
-        placeholderTextColor="#aaa"
-        value={username}
-        onChangeText={setUsername}
-      />
+      {renderInput("user", "Username", username, setUsername)}
       {usernameError ? <Text style={styles.error}>{usernameError}</Text> : null}
 
       {/* Password */}
-      <Text style={styles.label}>Password</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your password"
-        placeholderTextColor="#aaa"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+      {renderInput("lock", "Password", password, setPassword, true)}
       {passwordError ? <Text style={styles.error}>{passwordError}</Text> : null}
 
       {/* Register Button */}
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Register</Text>
+        <Text style={styles.buttonText}>
+          <Icon name="user-plus" size={18} color="#fff" /> Register
+        </Text>
       </TouchableOpacity>
 
-      {/* Login Link */}
-      <View style={styles.loginTextContainer}>
-        <Link href="/login" style={styles.loginLink}>
-          Already have an account? Login
+      {/* REGISTER LINK using Expo Router */}
+      <View style={styles.row}>
+        <Text style={styles.small}>Already have an account? </Text>
+        <Link href="/login" style={styles.link}>
+          Login
         </Link>
       </View>
     </View>
@@ -141,31 +162,33 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#fff",
   },
-  label: {
-    fontSize: 16,
-    fontWeight: "500",
-    marginBottom: 5,
-    color: "#fff",
-  },
-  input: {
-    width: "100%",
-    height: 50,
-    backgroundColor: "#f1f1f1",
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1f2937",
     borderRadius: 8,
-    paddingHorizontal: 15,
     marginBottom: 10,
+    paddingHorizontal: 15,
+    height: 50,
+  },
+  icon: {
+    marginRight: 10,
+  },
+  inputWithIcon: {
+    flex: 1,
     fontSize: 16,
+    color: "#fff",
   },
   button: {
     backgroundColor: "#ff3e6c",
     paddingVertical: 15,
     borderRadius: 8,
     marginTop: 10,
+    alignItems: "center",
   },
   buttonText: {
     color: "#fff",
     fontSize: 18,
-    textAlign: "center",
     fontWeight: "600",
   },
   error: {
@@ -173,13 +196,19 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     fontSize: 14,
   },
-  loginTextContainer: {
+  row: {
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 20,
-    alignItems: "center",
   },
-  loginLink: {
+  small: {
+    color: "#fff",
+    fontSize: 14,
+  },
+  link: {
     color: "#ff3e6c",
     fontWeight: "600",
     fontSize: 14,
+    marginLeft: 5,
   },
 });

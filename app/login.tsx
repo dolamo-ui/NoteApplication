@@ -22,17 +22,24 @@ type RootStackParamList = {
 
 type LoginScreenProp = NativeStackNavigationProp<RootStackParamList, "Login">;
 
+interface User {
+  email: string;
+  username: string;
+  password: string;
+}
+
+const USERS_KEY = "users_v1";
+const LOGGED_IN_KEY = "loggedInUser_v1";
+
 export default function Login() {
   const navigation = useNavigation<LoginScreenProp>();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [secure, setSecure] = useState(true);
   const [touched, setTouched] = useState(false);
   const [isValid, setIsValid] = useState(false);
 
-  // Validate fields
   useEffect(() => {
     setIsValid(validateEmail(email) && password.length >= 6);
   }, [email, password]);
@@ -41,7 +48,6 @@ export default function Login() {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
   }
 
-  // LOGIN — RETRIEVE SAVED USER DATA
   const handleSubmit = async () => {
     setTouched(true);
 
@@ -54,23 +60,29 @@ export default function Login() {
     }
 
     try {
-      const savedUser = await AsyncStorage.getItem("user");
+      const rawUsers = await AsyncStorage.getItem(USERS_KEY);
+      const users: User[] = rawUsers ? JSON.parse(rawUsers) : [];
 
-      if (!savedUser) {
-        Alert.alert("No User Found", "Please create an account first.");
+      if (users.length === 0) {
+        Alert.alert("No Users Found", "Please create an account first.");
         return;
       }
 
-      const user = JSON.parse(savedUser);
+      
+      const matchedUser = users.find(
+        (u) => u.email === email.trim() && u.password === password
+      );
 
-      // Compare entered email/password
-      if (email === user.email && password === user.password) {
+      if (matchedUser) {
+        
+        await AsyncStorage.setItem(LOGGED_IN_KEY, JSON.stringify(matchedUser));
         Alert.alert("Success", "Logged in successfully!");
         navigation.navigate("Notes");
       } else {
         Alert.alert("Error", "Email or password is incorrect.");
       }
     } catch (error) {
+      console.error(error);
       Alert.alert("Error", "Something went wrong while logging in.");
     }
   };
@@ -80,10 +92,15 @@ export default function Login() {
       <Text style={styles.title}>Welcome — Notes</Text>
 
       <View style={styles.form}>
-        {/* EMAIL INPUT */}
+        
         <Text style={styles.label}>Email</Text>
         <View style={styles.inputRow}>
-          <FontAwesome name="envelope" size={18} color="#94a3b8" style={styles.icon} />
+          <FontAwesome
+            name="envelope"
+            size={18}
+            color="#94a3b8"
+            style={styles.icon}
+          />
           <TextInput
             style={[
               styles.input,
@@ -107,7 +124,12 @@ export default function Login() {
         <Text style={[styles.label, { marginTop: 12 }]}>Password</Text>
         <View style={styles.passwordRow}>
           <View style={styles.inputRow}>
-            <FontAwesome name="lock" size={18} color="#94a3b8" style={styles.icon} />
+            <FontAwesome
+              name="lock"
+              size={18}
+              color="#94a3b8"
+              style={styles.icon}
+            />
             <TextInput
               style={[
                 styles.input,
@@ -123,7 +145,10 @@ export default function Login() {
             />
           </View>
 
-          <TouchableOpacity style={styles.toggle} onPress={() => setSecure((s) => !s)}>
+          <TouchableOpacity
+            style={styles.toggle}
+            onPress={() => setSecure((s) => !s)}
+          >
             <Text style={styles.toggleText}>{secure ? "Show" : "Hide"}</Text>
           </TouchableOpacity>
         </View>
