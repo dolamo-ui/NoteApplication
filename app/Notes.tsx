@@ -11,7 +11,6 @@ import {
   Alert,
   StyleSheet,
   StatusBar,
-  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -22,7 +21,7 @@ import PickerWrapper from '@/components/PickerWrapper';
 
 import { FontAwesome } from "@expo/vector-icons";
 
-/* ====================== TYPES ====================== */
+
 export interface User {
   email: string;
   username: string;
@@ -41,13 +40,13 @@ export interface Note {
 type Category = 'All Notes' | 'Work' | 'School' | 'Personal';
 type SortOrder = 'asc' | 'desc';
 
-/* ====================== KEYS ====================== */
+
 const USERS_KEY = 'users_v1';
 const LOGGED_IN_KEY = 'loggedInUser_v1';
 
-/* ====================== APP ====================== */
+
 export default function App() {
-  /* ---------- state ---------- */
+ 
   const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
@@ -67,7 +66,7 @@ export default function App() {
   const [profileUsername, setProfileUsername] = useState('');
   const [profilePassword, setProfilePassword] = useState('');
 
-  /* ---------- helpers ---------- */
+  
   const notesKey = useCallback(
     (email?: string) =>
       email || currentUser?.email ? `notes_${email ?? currentUser?.email}` : null,
@@ -87,13 +86,14 @@ export default function App() {
         : new Date(b.created).getTime() - new Date(a.created).getTime()
     );
 
-  /* ---------- persistence ---------- */
+ 
   async function loadUsersAndMaybeSeed() {
     try {
       const raw = await AsyncStorage.getItem(USERS_KEY);
       const logged = await AsyncStorage.getItem(LOGGED_IN_KEY);
 
       if (!raw) {
+       
         const demo: User = {
           email: 'demo@example.com',
           username: 'Dimitar',
@@ -123,49 +123,18 @@ export default function App() {
         setNotes([]);
         return;
       }
+
       const key = notesKey(currentUser.email);
       if (!key) return;
+
       const raw = await AsyncStorage.getItem(key);
+
+      
       if (!raw) {
-        const now = Date.now();
-        const demo: Note[] = [
-          {
-            id: now + 1,
-            title: 'Reminder',
-            text: 'Create design brief',
-            category: 'Work',
-            created: new Date().toISOString(),
-            updated: null,
-          },
-          {
-            id: now + 2,
-            title: 'Dev Team',
-            text: 'Get dev team involved early',
-            category: 'Work',
-            created: new Date().toISOString(),
-            updated: null,
-          },
-          {
-            id: now + 3,
-            title: 'Narrative',
-            text: 'Think what to share',
-            category: 'School',
-            created: new Date().toISOString(),
-            updated: null,
-          },
-          {
-            id: now + 4,
-            title: '',
-            text: 'Consider info digestibility',
-            category: 'Personal',
-            created: new Date().toISOString(),
-            updated: null,
-          },
-        ];
-        await AsyncStorage.setItem(key, JSON.stringify(demo));
-        setNotes(demo);
+        setNotes([]);
         return;
       }
+
       setNotes(JSON.parse(raw));
     } catch (e) {
       console.warn('loadNotesForCurrentUser', e);
@@ -187,7 +156,7 @@ export default function App() {
     }
   }
 
-  /* ---------- lifecycle ---------- */
+ 
   useEffect(() => {
     loadUsersAndMaybeSeed();
   }, []);
@@ -195,7 +164,7 @@ export default function App() {
     loadNotesForCurrentUser();
   }, [currentUser]);
 
-  /* ---------- profile ---------- */
+  
   async function updateProfile() {
     if (!currentUser) return Alert.alert('Error', 'No user logged in.');
     try {
@@ -228,7 +197,7 @@ export default function App() {
     await AsyncStorage.removeItem(LOGGED_IN_KEY);
   }
 
-  /* ---------- notes CRUD ---------- */
+
   function openAdd() {
     setEditId(null);
     setSaTitle('');
@@ -252,9 +221,9 @@ export default function App() {
     const cat = saCategory || 'Work';
     const next = [...notes];
 
-    if (editId) {
+    if (editId !== null) {
       const idx = next.findIndex(n => n.id === editId);
-      if (idx !== -1)
+      if (idx !== -1) {
         next[idx] = {
           ...next[idx],
           title,
@@ -262,6 +231,7 @@ export default function App() {
           category: String(cat),
           updated: new Date().toISOString(),
         };
+      }
     } else {
       const newNote: Note = {
         id: Date.now(),
@@ -275,6 +245,7 @@ export default function App() {
     }
 
     await persistNotes(next);
+
     setAddEditVisible(false);
     setEditId(null);
     setSaTitle('');
@@ -296,7 +267,7 @@ export default function App() {
     ]);
   }
 
-  /* ---------- render ---------- */
+ 
   const categories: Category[] = ['All Notes', 'Work', 'School', 'Personal'];
 
   return (
@@ -304,7 +275,7 @@ export default function App() {
       <StatusBar barStyle="light-content" />
       <View style={styles.container}>
 
-        {/* Header */}
+        
         <View style={styles.header}>
           <View>
             <Text style={styles.greetHi}>Welcome to Notes,</Text>
@@ -315,7 +286,7 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-        {/* Button-style Tabs */}
+        
         <ScrollView
           horizontal
           contentContainerStyle={styles.tabsScroll}
@@ -337,9 +308,9 @@ export default function App() {
           </View>
         </ScrollView>
 
-        {/* Search */}
+       
         <TextInput
-          style={styles.searchInput}
+          style={styles.inputPillSearch}
           placeholder="Search notes..."
           placeholderTextColor="#999"
           value={search}
@@ -379,7 +350,7 @@ export default function App() {
           )}
         </View>
 
-        {/* Bottom Navigation */}
+      
         <View style={styles.bottomNav}>
           <TouchableOpacity style={styles.navBtn} onPress={() => setCategory('All Notes')}>
             <FontAwesome name="home" size={26} color="#fff" />
@@ -394,24 +365,26 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-        {/* Add/Edit Modal */}
+        
         <ModalWrapper visible={addEditVisible} onClose={() => setAddEditVisible(false)}>
           <ScrollView style={{ padding: 14 }}>
             <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>{editId ? 'Edit Note' : 'Add Note'}</Text>
+              <Text style={styles.modalTitle}>{editId !== null ? 'Edit Note' : 'Add Note'}</Text>
+
               <TextInput
                 placeholder="Title (optional)"
                 placeholderTextColor="#888"
                 value={saTitle}
                 onChangeText={setSaTitle}
-                style={styles.input}
+                style={styles.inputPill}
               />
+
               <TextInput
                 placeholder="Write your note here..."
                 placeholderTextColor="#888"
                 value={saText}
                 onChangeText={setSaText}
-                style={[styles.input, { height: 120 }]}
+                style={[styles.inputPillMultiline]}
                 multiline
               />
 
@@ -441,7 +414,7 @@ export default function App() {
           </ScrollView>
         </ModalWrapper>
 
-        {/* Profile Modal */}
+        
         <ModalWrapper visible={profileVisible} onClose={() => setProfileVisible(false)}>
           <ScrollView style={{ padding: 14 }}>
             <View style={styles.modalCard}>
@@ -465,7 +438,7 @@ export default function App() {
                 placeholderTextColor="#777"
                 value={profileUsername}
                 onChangeText={setProfileUsername}
-                style={styles.input}
+                style={styles.inputPill}
               />
 
               <Text style={{ color: '#999' }}>Password</Text>
@@ -474,7 +447,7 @@ export default function App() {
                 placeholderTextColor="#777"
                 value={profilePassword}
                 onChangeText={setProfilePassword}
-                style={styles.input}
+                style={styles.inputPill}
                 secureTextEntry
               />
 
@@ -495,7 +468,6 @@ export default function App() {
   );
 }
 
-/* ====================== STYLES ====================== */
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#080808' },
   container: { flex: 1, padding: 14, backgroundColor: '#080808' },
@@ -504,10 +476,9 @@ const styles = StyleSheet.create({
   greetHi: { color: '#ddd', fontSize: 14 },
   greetUser: { color: '#fff', fontSize: 20, fontWeight: '800' },
 
-  /* ↓↓↓ GAP REDUCED HERE ↓↓↓ */
   tabsScroll: {
-    paddingVertical: 4,   // decreased space
-    marginBottom: 4,      // keeps tabs closer to search
+    paddingVertical: 4,
+    marginBottom: 4,
   },
 
   tabsRow: { flexDirection: 'row', alignItems: 'center' },
@@ -517,6 +488,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 24,
     marginRight: 10,
+    marginBottom: -210,
     backgroundColor: 'transparent',
     borderWidth: 0,
   },
@@ -527,16 +499,6 @@ const styles = StyleSheet.create({
   },
   tabButtonText: { color: '#9a9a9a', fontWeight: '700' },
   tabButtonTextActive: { color: '#fff' },
-
-  /* ↓↓↓ SMALLER GAP ABOVE SEARCH ↓↓↓ */
-  searchInput: {
-    backgroundColor: '#151515',
-    borderRadius: 12,
-    padding: 12,
-    color: '#fff',
-    marginTop: -250,      // reduced gap
-    marginBottom: 6,
-  },
 
   topBarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   categoryTitle: { color: '#fff', fontWeight: '800', fontSize: 18 },
@@ -579,12 +541,44 @@ const styles = StyleSheet.create({
   modalCard: { backgroundColor: '#fff', marginTop: 6, borderRadius: 12, padding: 12 },
   modalTitle: { fontSize: 18, fontWeight: '800', marginBottom: 8 },
 
-  input: {
-    backgroundColor: '#121212',
+  /* ========== PILL / ROUNDED INPUT STYLES ========== */
+  inputPillSearch: {
+    backgroundColor: '#1b2433',
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: '#ff3e6c',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     color: '#fff',
-    borderRadius: 10,
-    padding: 10,
+    marginBottom: 8,
+    fontSize: 15,
+  },
+
+  inputPill: {
+    backgroundColor: '#1b2433',
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: '#ff3e6c',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    color: '#fff',
     marginTop: 8,
+    fontSize: 16,
+    height: 50,
+  },
+
+  inputPillMultiline: {
+    backgroundColor: '#1b2433',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#ff3e6c',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    color: '#fff',
+    marginTop: 8,
+    fontSize: 16,
+    minHeight: 120,
+    textAlignVertical: 'top',
   },
 
   saveBtn: {

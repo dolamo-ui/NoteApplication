@@ -20,7 +20,10 @@ type RootStackParamList = {
   Register: undefined;
 };
 
-type LoginScreenProp = NativeStackNavigationProp<RootStackParamList, "Login">;
+type LoginScreenProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "Login"
+>;
 
 interface User {
   email: string;
@@ -68,14 +71,16 @@ export default function Login() {
         return;
       }
 
-      
       const matchedUser = users.find(
         (u) => u.email === email.trim() && u.password === password
       );
 
       if (matchedUser) {
-        
-        await AsyncStorage.setItem(LOGGED_IN_KEY, JSON.stringify(matchedUser));
+        await AsyncStorage.setItem(
+          LOGGED_IN_KEY,
+          JSON.stringify(matchedUser)
+        );
+
         Alert.alert("Success", "Logged in successfully!");
         navigation.navigate("Notes");
       } else {
@@ -91,76 +96,53 @@ export default function Login() {
     <View style={styles.container}>
       <Text style={styles.title}>Welcome — Notes</Text>
 
-      <View style={styles.form}>
-        
-        <Text style={styles.label}>Email</Text>
-        <View style={styles.inputRow}>
-          <FontAwesome
-            name="envelope"
-            size={18}
-            color="#94a3b8"
-            style={styles.icon}
-          />
-          <TextInput
-            style={[
-              styles.input,
-              touched && !validateEmail(email) ? styles.inputError : undefined,
-            ]}
-            placeholder="you@example.com"
-            placeholderTextColor="#94a3b8"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-            onBlur={() => setTouched(true)}
-          />
-        </View>
-
-        {touched && !validateEmail(email) && (
-          <Text style={styles.errorText}>Enter a valid email address.</Text>
-        )}
-
-        {/* PASSWORD INPUT */}
-        <Text style={[styles.label, { marginTop: 12 }]}>Password</Text>
-        <View style={styles.passwordRow}>
-          <View style={styles.inputRow}>
-            <FontAwesome
-              name="lock"
-              size={18}
-              color="#94a3b8"
-              style={styles.icon}
-            />
-            <TextInput
-              style={[
-                styles.input,
-                styles.passwordInput,
-                touched && password.length < 6 ? styles.inputError : undefined,
-              ]}
-              placeholder="Password"
-              placeholderTextColor="#94a3b8"
-              secureTextEntry={secure}
-              value={password}
-              onChangeText={setPassword}
-              onBlur={() => setTouched(true)}
-            />
-          </View>
-
-          <TouchableOpacity
-            style={styles.toggle}
-            onPress={() => setSecure((s) => !s)}
-          >
-            <Text style={styles.toggleText}>{secure ? "Show" : "Hide"}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {touched && password.length < 6 && (
-          <Text style={styles.errorText}>
-            Password must be at least 6 characters.
-          </Text>
-        )}
+     
+      <Text style={styles.label}>Email</Text>
+      <View style={[styles.inputBox, touched && !validateEmail(email) ? styles.errorBorder : null]}>
+        <FontAwesome name="envelope" style={styles.leftIcon} />
+        <TextInput
+          style={styles.inputField}
+          placeholder="you@example.com"
+          placeholderTextColor="#94a3b8"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+          onBlur={() => setTouched(true)}
+        />
       </View>
 
-      {/* LOGIN BUTTON */}
+      {touched && !validateEmail(email) && (
+        <Text style={styles.errorText}>Enter a valid email address.</Text>
+      )}
+
+      
+      <Text style={[styles.label, { marginTop: 12 }]}>Password</Text>
+      <View style={[styles.inputBox, touched && password.length < 6 ? styles.errorBorder : null]}>
+        <FontAwesome name="lock" style={styles.leftIcon} />
+
+        <TextInput
+          style={styles.inputField}
+          placeholder="Password"
+          placeholderTextColor="#94a3b8"
+          secureTextEntry={secure}
+          value={password}
+          onChangeText={setPassword}
+          onBlur={() => setTouched(true)}
+        />
+
+        <TouchableOpacity onPress={() => setSecure(!secure)}>
+          <Text style={styles.showBtn}>{secure ? "Show" : "Hide"}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {touched && password.length < 6 && (
+        <Text style={styles.errorText}>
+          Password must be at least 6 characters.
+        </Text>
+      )}
+
+      
       <TouchableOpacity
         style={[styles.button, !isValid && styles.buttonDisabled]}
         onPress={handleSubmit}
@@ -169,7 +151,7 @@ export default function Login() {
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
 
-      {/* REGISTER LINK */}
+      
       <View style={styles.row}>
         <Text style={styles.small}>Don't have an account? </Text>
         <Link href="/Register" style={styles.link}>
@@ -184,47 +166,101 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0f1724",
-    alignItems: "center",
     justifyContent: "center",
     padding: 20,
   },
-  title: { color: "#fff", fontSize: 22, marginBottom: 20, fontWeight: "600" },
-  form: { width: "100%", marginBottom: 18 },
-  label: { color: "#cbd5e1", fontSize: 13, marginBottom: 6 },
-  inputRow: {
+
+  title: {
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 25,
+  },
+
+  label: {
+    color: "#cbd5e1",
+    fontSize: 14,
+    marginBottom: 6,
+  },
+
+  inputBox: {
+    position: "relative",
+    width: "100%",
+    marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0b1220",
-    borderRadius: 8,
-    borderWidth: 1,
+   backgroundColor: "#1b2433", 
+    borderRadius: 30,
+    borderWidth: 2,
     borderColor: "#ff3e6c",
+    paddingVertical: 12,
+    paddingLeft: 40,
+    paddingRight: 45,
   },
-  icon: { paddingHorizontal: 10 },
-  input: {
+
+  inputField: {
     flex: 1,
     color: "#fff",
-    paddingVertical: 12,
-    paddingHorizontal: 10,
     fontSize: 15,
   },
-  passwordRow: { flexDirection: "row", alignItems: "center" },
-  passwordInput: { flex: 1 },
-  toggle: { paddingHorizontal: 10, paddingVertical: 8 },
-  toggleText: { color: "#ff3e6c", fontWeight: "600" },
+
+  leftIcon: {
+    position: "absolute",
+    left: 14,
+    fontSize: 18,
+    color: "#fff",
+  },
+
+  showBtn: {
+    position: "absolute",
+    right: 1,
+    top: -7,
+    fontSize: 12,
+    color: "#fff",
+  },
+
+  errorText: {
+    color: "#fb7185",
+    marginBottom: 10,
+    fontSize: 13,
+  },
+
+  errorBorder: {
+    borderColor: "#fb7185",
+  },
+
   button: {
     backgroundColor: "#ff3e6c",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginTop: 8,
     width: "100%",
+    paddingVertical: 14,
+    borderRadius: 30,
     alignItems: "center",
+    marginTop: 10,
   },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  row: { flexDirection: "row", alignItems: "center", marginTop: 18 },
-  small: { color: "#94a3b8" },
-  link: { color: "#ff3e6c", fontWeight: "600" },
-  errorText: { color: "#fb7185", marginTop: 6, fontSize: 13 },
-  inputError: { borderColor: "#fb7185" },
+
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  row: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 18,
+  },
+
+  small: {
+    color: "#94a3b8",
+  },
+
+  link: {
+    color: "#ff3e6c",
+    fontWeight: "600",
+  },
 });
