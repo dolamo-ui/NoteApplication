@@ -7,6 +7,8 @@ import {
   StyleSheet,
   Alert,
 } from "react-native";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Link } from "expo-router";
@@ -37,33 +39,34 @@ const Register = () => {
   const validateUsername = (username: string) => username.length >= 3;
   const validatePassword = (password: string) => password.length >= 6;
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     let valid = true;
 
     if (!validateEmail(email)) {
       setEmailError("Please enter a valid email.");
       valid = false;
-    } else {
-      setEmailError("");
-    }
+    } else setEmailError("");
 
     if (!validateUsername(username)) {
       setUsernameError("Username must be at least 3 characters.");
       valid = false;
-    } else {
-      setUsernameError("");
-    }
+    } else setUsernameError("");
 
     if (!validatePassword(password)) {
       setPasswordError("Password must be at least 6 characters.");
       valid = false;
-    } else {
-      setPasswordError("");
-    }
+    } else setPasswordError("");
 
-    if (valid) {
-      Alert.alert("Success", "Account created successfully!");
+    if (!valid) return;
+
+    const userData = { email, username, password };
+
+    try {
+      await AsyncStorage.setItem("user", JSON.stringify(userData));
+     
       navigation.navigate("Notes");
+    } catch (error) {
+      Alert.alert("Error", "Something went wrong while saving your account.");
     }
   };
 
@@ -71,6 +74,7 @@ const Register = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Create Account</Text>
 
+      {/* Email */}
       <Text style={styles.label}>Email</Text>
       <TextInput
         style={styles.input}
@@ -78,11 +82,12 @@ const Register = () => {
         placeholderTextColor="#aaa"
         value={email}
         onChangeText={setEmail}
-        keyboardType="email-address"
         autoCapitalize="none"
+        keyboardType="email-address"
       />
       {emailError ? <Text style={styles.error}>{emailError}</Text> : null}
 
+      {/* Username */}
       <Text style={styles.label}>Username</Text>
       <TextInput
         style={styles.input}
@@ -93,6 +98,7 @@ const Register = () => {
       />
       {usernameError ? <Text style={styles.error}>{usernameError}</Text> : null}
 
+      {/* Password */}
       <Text style={styles.label}>Password</Text>
       <TextInput
         style={styles.input}
@@ -104,11 +110,12 @@ const Register = () => {
       />
       {passwordError ? <Text style={styles.error}>{passwordError}</Text> : null}
 
+      {/* Register Button */}
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Register</Text>
       </TouchableOpacity>
 
-      {/* Link to Login */}
+      {/* Login Link */}
       <View style={styles.loginTextContainer}>
         <Link href="/login" style={styles.loginLink}>
           Already have an account? Login

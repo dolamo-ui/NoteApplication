@@ -7,10 +7,12 @@ import {
   StyleSheet,
   Alert,
 } from "react-native";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome } from "@expo/vector-icons";
-import { Link } from "expo-router"; // Link for navigation
+import { Link } from "expo-router";
 
 type RootStackParamList = {
   Login: undefined;
@@ -25,10 +27,12 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [secure, setSecure] = useState(true);
   const [touched, setTouched] = useState(false);
   const [isValid, setIsValid] = useState(false);
 
+  // Validate fields
   useEffect(() => {
     setIsValid(validateEmail(email) && password.length >= 6);
   }, [email, password]);
@@ -37,8 +41,10 @@ export default function Login() {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
   }
 
-  const handleSubmit = () => {
+  // LOGIN — RETRIEVE SAVED USER DATA
+  const handleSubmit = async () => {
     setTouched(true);
+
     if (!isValid) {
       Alert.alert(
         "Invalid credentials",
@@ -46,7 +52,27 @@ export default function Login() {
       );
       return;
     }
-    navigation.navigate("Notes");
+
+    try {
+      const savedUser = await AsyncStorage.getItem("user");
+
+      if (!savedUser) {
+        Alert.alert("No User Found", "Please create an account first.");
+        return;
+      }
+
+      const user = JSON.parse(savedUser);
+
+      // Compare entered email/password
+      if (email === user.email && password === user.password) {
+        Alert.alert("Success", "Logged in successfully!");
+        navigation.navigate("Notes");
+      } else {
+        Alert.alert("Error", "Email or password is incorrect.");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Something went wrong while logging in.");
+    }
   };
 
   return (
@@ -54,14 +80,10 @@ export default function Login() {
       <Text style={styles.title}>Welcome — Notes</Text>
 
       <View style={styles.form}>
+        {/* EMAIL INPUT */}
         <Text style={styles.label}>Email</Text>
         <View style={styles.inputRow}>
-          <FontAwesome
-            name="envelope"
-            size={18}
-            color="#94a3b8"
-            style={styles.icon}
-          />
+          <FontAwesome name="envelope" size={18} color="#94a3b8" style={styles.icon} />
           <TextInput
             style={[
               styles.input,
@@ -76,19 +98,16 @@ export default function Login() {
             onBlur={() => setTouched(true)}
           />
         </View>
+
         {touched && !validateEmail(email) && (
           <Text style={styles.errorText}>Enter a valid email address.</Text>
         )}
 
+        {/* PASSWORD INPUT */}
         <Text style={[styles.label, { marginTop: 12 }]}>Password</Text>
         <View style={styles.passwordRow}>
           <View style={styles.inputRow}>
-            <FontAwesome
-              name="lock"
-              size={18}
-              color="#94a3b8"
-              style={styles.icon}
-            />
+            <FontAwesome name="lock" size={18} color="#94a3b8" style={styles.icon} />
             <TextInput
               style={[
                 styles.input,
@@ -103,14 +122,12 @@ export default function Login() {
               onBlur={() => setTouched(true)}
             />
           </View>
-          <TouchableOpacity
-            style={styles.toggle}
-            onPress={() => setSecure((s) => !s)}
-            accessibilityLabel={secure ? "Show password" : "Hide password"}
-          >
+
+          <TouchableOpacity style={styles.toggle} onPress={() => setSecure((s) => !s)}>
             <Text style={styles.toggleText}>{secure ? "Show" : "Hide"}</Text>
           </TouchableOpacity>
         </View>
+
         {touched && password.length < 6 && (
           <Text style={styles.errorText}>
             Password must be at least 6 characters.
@@ -118,6 +135,7 @@ export default function Login() {
         )}
       </View>
 
+      {/* LOGIN BUTTON */}
       <TouchableOpacity
         style={[styles.button, !isValid && styles.buttonDisabled]}
         onPress={handleSubmit}
@@ -126,14 +144,7 @@ export default function Login() {
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={() =>
-          Alert.alert("Reset password", "Password reset flow not implemented.")
-        }
-      >
-        <Text style={styles.forgot}>Forgot password?</Text>
-      </TouchableOpacity>
-
+      {/* REGISTER LINK */}
       <View style={styles.row}>
         <Text style={styles.small}>Don't have an account? </Text>
         <Link href="/Register" style={styles.link}>
@@ -168,7 +179,6 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "#fff",
     paddingVertical: 12,
-    borderColor: "#ff3e6c",
     paddingHorizontal: 10,
     fontSize: 15,
   },
@@ -187,7 +197,6 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.6 },
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  forgot: { color: "#94a3b8", marginTop: 12 },
   row: { flexDirection: "row", alignItems: "center", marginTop: 18 },
   small: { color: "#94a3b8" },
   link: { color: "#ff3e6c", fontWeight: "600" },
