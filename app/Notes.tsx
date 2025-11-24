@@ -1,10 +1,9 @@
-// App.tsx
+
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   SafeAreaView,
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   FlatList,
   ScrollView,
@@ -18,9 +17,9 @@ import Avatar from '@/components/Avatar';
 import NoteCard from '@/components/NoteCard';
 import ModalWrapper from '@/components/ModalWrapper';
 import PickerWrapper from '@/components/PickerWrapper';
+import InputField from '@/components/InputField';
 
-import { FontAwesome } from "@expo/vector-icons";
-
+import { FontAwesome } from '@expo/vector-icons';
 
 export interface User {
   email: string;
@@ -40,16 +39,12 @@ export interface Note {
 type Category = 'All Notes' | 'Work' | 'School' | 'Personal';
 type SortOrder = 'asc' | 'desc';
 
-
 const USERS_KEY = 'users_v1';
 const LOGGED_IN_KEY = 'loggedInUser_v1';
 
-
 export default function App() {
- 
   const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-
   const [notes, setNotes] = useState<Note[]>([]);
   const [category, setCategory] = useState<Category>('All Notes');
   const [search, setSearch] = useState('');
@@ -66,10 +61,8 @@ export default function App() {
   const [profileUsername, setProfileUsername] = useState('');
   const [profilePassword, setProfilePassword] = useState('');
 
-  
   const notesKey = useCallback(
-    (email?: string) =>
-      email || currentUser?.email ? `notes_${email ?? currentUser?.email}` : null,
+    (email?: string) => email || currentUser?.email ? `notes_${email ?? currentUser?.email}` : null,
     [currentUser]
   );
 
@@ -86,31 +79,20 @@ export default function App() {
         : new Date(b.created).getTime() - new Date(a.created).getTime()
     );
 
- 
+  
   async function loadUsersAndMaybeSeed() {
     try {
       const raw = await AsyncStorage.getItem(USERS_KEY);
       const logged = await AsyncStorage.getItem(LOGGED_IN_KEY);
 
       if (!raw) {
-       
-        const demo: User = {
-          email: 'demo@example.com',
-          username: 'Dimitar',
-          password: 'password',
-        };
-        await AsyncStorage.setItem(USERS_KEY, JSON.stringify([demo]));
-        await AsyncStorage.setItem(LOGGED_IN_KEY, JSON.stringify(demo));
-        setUsers([demo]);
-        setCurrentUser(demo);
+        setUsers([]);
+        setCurrentUser(null);
       } else {
         const parsed: User[] = JSON.parse(raw);
         setUsers(parsed);
         if (logged) setCurrentUser(JSON.parse(logged));
-        else {
-          setCurrentUser(parsed[0]);
-          await AsyncStorage.setItem(LOGGED_IN_KEY, JSON.stringify(parsed[0]));
-        }
+        else setCurrentUser(parsed[0] || null);
       }
     } catch (e) {
       console.warn('loadUsersAndMaybeSeed', e);
@@ -128,14 +110,7 @@ export default function App() {
       if (!key) return;
 
       const raw = await AsyncStorage.getItem(key);
-
-      
-      if (!raw) {
-        setNotes([]);
-        return;
-      }
-
-      setNotes(JSON.parse(raw));
+      setNotes(raw ? JSON.parse(raw) : []);
     } catch (e) {
       console.warn('loadNotesForCurrentUser', e);
     }
@@ -156,10 +131,10 @@ export default function App() {
     }
   }
 
- 
   useEffect(() => {
     loadUsersAndMaybeSeed();
   }, []);
+
   useEffect(() => {
     loadNotesForCurrentUser();
   }, [currentUser]);
@@ -197,7 +172,7 @@ export default function App() {
     await AsyncStorage.removeItem(LOGGED_IN_KEY);
   }
 
-
+  
   function openAdd() {
     setEditId(null);
     setSaTitle('');
@@ -245,7 +220,6 @@ export default function App() {
     }
 
     await persistNotes(next);
-
     setAddEditVisible(false);
     setEditId(null);
     setSaTitle('');
@@ -267,15 +241,14 @@ export default function App() {
     ]);
   }
 
- 
   const categories: Category[] = ['All Notes', 'Work', 'School', 'Personal'];
 
+  
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" />
       <View style={styles.container}>
-
-        
+        {/* Header */}
         <View style={styles.header}>
           <View>
             <Text style={styles.greetHi}>Welcome to Notes,</Text>
@@ -287,11 +260,7 @@ export default function App() {
         </View>
 
         
-        <ScrollView
-          horizontal
-          contentContainerStyle={styles.tabsScroll}
-          showsHorizontalScrollIndicator={false}
-        >
+        <ScrollView horizontal contentContainerStyle={styles.tabsScroll} showsHorizontalScrollIndicator={false}>
           <View style={styles.tabsRow}>
             {categories.map(t => (
               <TouchableOpacity
@@ -300,24 +269,16 @@ export default function App() {
                 activeOpacity={0.8}
                 style={[styles.tabButton, category === t && styles.tabButtonActive]}
               >
-                <Text style={[styles.tabButtonText, category === t && styles.tabButtonTextActive]}>
-                  {t}
-                </Text>
+                <Text style={[styles.tabButtonText, category === t && styles.tabButtonTextActive]}>{t}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </ScrollView>
 
        
-        <TextInput
-          style={styles.inputPillSearch}
-          placeholder="Search notes..."
-          placeholderTextColor="#999"
-          value={search}
-          onChangeText={setSearch}
-        />
+        <InputField value={search} placeholder="Search notes..." onChangeText={setSearch} />
 
-        {/* Top Row */}
+      
         <View style={styles.topBarRow}>
           <Text style={styles.categoryTitle}>{category}</Text>
           <PickerWrapper
@@ -330,7 +291,7 @@ export default function App() {
           />
         </View>
 
-        {/* Notes List */}
+        
         <View style={{ flex: 1 }}>
           {filteredAndSorted.length === 0 ? (
             <View style={styles.emptyBox}>
@@ -340,9 +301,7 @@ export default function App() {
             <FlatList
               data={filteredAndSorted}
               keyExtractor={i => String(i.id)}
-              renderItem={({ item, index }) => (
-                <NoteCard note={item} index={index} onEdit={openEdit} onDelete={removeNote} />
-              )}
+              renderItem={({ item, index }) => <NoteCard note={item} index={index} onEdit={openEdit} onDelete={removeNote} />}
               numColumns={2}
               columnWrapperStyle={{ justifyContent: 'space-between' }}
               contentContainerStyle={{ paddingBottom: 120, paddingTop: 6 }}
@@ -350,7 +309,7 @@ export default function App() {
           )}
         </View>
 
-      
+       
         <View style={styles.bottomNav}>
           <TouchableOpacity style={styles.navBtn} onPress={() => setCategory('All Notes')}>
             <FontAwesome name="home" size={26} color="#fff" />
@@ -370,24 +329,8 @@ export default function App() {
           <ScrollView style={{ padding: 14 }}>
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>{editId !== null ? 'Edit Note' : 'Add Note'}</Text>
-
-              <TextInput
-                placeholder="Title (optional)"
-                placeholderTextColor="#888"
-                value={saTitle}
-                onChangeText={setSaTitle}
-                style={styles.inputPill}
-              />
-
-              <TextInput
-                placeholder="Write your note here..."
-                placeholderTextColor="#888"
-                value={saText}
-                onChangeText={setSaText}
-                style={[styles.inputPillMultiline]}
-                multiline
-              />
-
+              <InputField value={saTitle} placeholder="Title (optional)" onChangeText={setSaTitle} />
+              <InputField value={saText} placeholder="Write your note here..." onChangeText={setSaText} multiline />
               <Text style={{ color: '#999', marginTop: 6 }}>Category</Text>
               <PickerWrapper
                 selectedValue={saCategory}
@@ -398,15 +341,11 @@ export default function App() {
                   { label: 'Personal', value: 'Personal' },
                 ]}
               />
-
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
                 <TouchableOpacity style={styles.saveBtn} onPress={saveNote}>
                   <Text style={{ fontWeight: '800' }}>Save</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.cancelBtn}
-                  onPress={() => setAddEditVisible(false)}
-                >
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setAddEditVisible(false)}>
                   <Text style={{ color: '#fff' }}>Cancel</Text>
                 </TouchableOpacity>
               </View>
@@ -421,36 +360,17 @@ export default function App() {
               <TouchableOpacity onPress={() => setProfileVisible(false)} style={styles.backBtnFloating}>
                 <Text style={styles.backBtnText}>←</Text>
               </TouchableOpacity>
-
               <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', marginTop: 24 }}>
                 <Avatar username={currentUser?.username} size={84} />
                 <View>
-                  <Text style={{ fontWeight: '800', fontSize: 18 }}>
-                    {currentUser?.username || 'Username'}
-                  </Text>
+                  <Text style={{ fontWeight: '800', fontSize: 18 }}>{currentUser?.username || 'Username'}</Text>
                   <Text style={{ color: '#999' }}>{currentUser?.email || ''}</Text>
                 </View>
               </View>
-
               <Text style={{ color: '#999', marginTop: 12 }}>Username</Text>
-              <TextInput
-                placeholder="New Username"
-                placeholderTextColor="#777"
-                value={profileUsername}
-                onChangeText={setProfileUsername}
-                style={styles.inputPill}
-              />
-
+              <InputField value={profileUsername} placeholder="New Username" onChangeText={setProfileUsername} />
               <Text style={{ color: '#999' }}>Password</Text>
-              <TextInput
-                placeholder="New Password"
-                placeholderTextColor="#777"
-                value={profilePassword}
-                onChangeText={setProfilePassword}
-                style={styles.inputPill}
-                secureTextEntry
-              />
-
+              <InputField value={profilePassword} placeholder="New Password" onChangeText={setProfilePassword} secureTextEntry />
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
                 <TouchableOpacity style={styles.saveBtn} onPress={updateProfile}>
                   <Text style={{ fontWeight: '800' }}>Save</Text>
@@ -462,157 +382,34 @@ export default function App() {
             </View>
           </ScrollView>
         </ModalWrapper>
-
       </View>
     </SafeAreaView>
   );
 }
 
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#080808' },
   container: { flex: 1, padding: 14, backgroundColor: '#080808' },
-
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: -230 },
   greetHi: { color: '#ddd', fontSize: 14 },
   greetUser: { color: '#fff', fontSize: 20, fontWeight: '800' },
-
-  tabsScroll: {
-    paddingVertical: 4,
-    marginBottom: 4,
-  },
-
+  tabsScroll: { paddingVertical: 4, marginBottom: 4 },
   tabsRow: { flexDirection: 'row', alignItems: 'center' },
-
-  tabButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 24,
-    marginRight: 10,
-    marginBottom: -210,
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-  },
-  tabButtonActive: {
-    borderBottomWidth: 3,
-    borderBottomColor: '#ff3e6c',
-    backgroundColor: 'rgba(255,214,0,0.06)',
-  },
+  tabButton: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 24, marginRight: 10, marginBottom: -210, backgroundColor: 'transparent', borderWidth: 0 },
+  tabButtonActive: { borderBottomWidth: 3, borderBottomColor: '#ff3e6c', backgroundColor: 'rgba(255,214,0,0.06)' },
   tabButtonText: { color: '#9a9a9a', fontWeight: '700' },
   tabButtonTextActive: { color: '#fff' },
-
   topBarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   categoryTitle: { color: '#fff', fontWeight: '800', fontSize: 18 },
-
-  emptyBox: {
-    padding: 22,
-    borderRadius: 12,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-  },
-
-  bottomNav: {
-    position: 'absolute',
-    left: 14,
-    right: 14,
-    bottom: 18,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  navBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#0e0e0e',
-  },
-
-  centerBtn: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    transform: [{ translateY: -8 }],
-    backgroundColor: '#1f1f1f',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
+  emptyBox: { padding: 22, borderRadius: 12, backgroundColor: 'transparent', alignItems: 'center' },
+  bottomNav: { position: 'absolute', left: 14, right: 14, bottom: 18, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  navBtn: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0e0e0e' },
+  centerBtn: { width: 68, height: 68, borderRadius: 34, transform: [{ translateY: -8 }], backgroundColor: '#1f1f1f', alignItems: 'center', justifyContent: 'center' },
   modalCard: { backgroundColor: '#fff', marginTop: 6, borderRadius: 12, padding: 12 },
   modalTitle: { fontSize: 18, fontWeight: '800', marginBottom: 8 },
-
-  /* ========== PILL / ROUNDED INPUT STYLES ========== */
-  inputPillSearch: {
-    backgroundColor: '#1b2433',
-    borderRadius: 30,
-    borderWidth: 2,
-    borderColor: '#ff3e6c',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    color: '#fff',
-    marginBottom: 8,
-    fontSize: 15,
-  },
-
-  inputPill: {
-    backgroundColor: '#1b2433',
-    borderRadius: 30,
-    borderWidth: 2,
-    borderColor: '#ff3e6c',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    color: '#fff',
-    marginTop: 8,
-    fontSize: 16,
-    height: 50,
-  },
-
-  inputPillMultiline: {
-    backgroundColor: '#1b2433',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#ff3e6c',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    color: '#fff',
-    marginTop: 8,
-    fontSize: 16,
-    minHeight: 120,
-    textAlignVertical: 'top',
-  },
-
-  saveBtn: {
-    backgroundColor: '#ff3e6c',
-    padding: 12,
-    borderRadius: 10,
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelBtn: {
-    backgroundColor: '#111',
-    padding: 12,
-    borderRadius: 10,
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  backBtnFloating: {
-    position: 'absolute',
-    top: 1,
-    left: 12,
-    padding: 6,
-    backgroundColor: '#1f1f1f',
-    borderRadius: 20,
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backBtnText: {
-    color: '#ff3e6c',
-    fontSize: 20,
-    fontWeight: '800',
-  },
+  saveBtn: { backgroundColor: '#ff3e6c', padding: 12, borderRadius: 10, flex: 1, alignItems: 'center', justifyContent: 'center' },
+  cancelBtn: { backgroundColor: '#111', padding: 12, borderRadius: 10, flex: 1, alignItems: 'center', justifyContent: 'center' },
+  backBtnFloating: { position: 'absolute', top: 1, left: 12, padding: 6, backgroundColor: '#1f1f1f', borderRadius: 20, width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  backBtnText: { color: '#ff3e6c', fontSize: 20, fontWeight: '800' },
 });

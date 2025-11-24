@@ -1,28 +1,10 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-} from "react-native";
+import { View, Text, StyleSheet, Alert, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Icon from "react-native-vector-icons/FontAwesome";
-import { Link } from "expo-router"; // Expo Router Link
-
-type RootStackParamList = {
-  Login: undefined;
-  Register: undefined;
-  Notes: undefined;
-};
-
-type RegisterScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "Register"
->;
+import IconInput from "@/components/IconInput";
+import PrimaryButton from "@/components/PrimaryButton";
+import RowLink from "@/components/RowLink";
+import { FontAwesome } from "@expo/vector-icons";
 
 interface User {
   email: string;
@@ -33,45 +15,46 @@ interface User {
 const USERS_KEY = "users_v1";
 const LOGGED_IN_KEY = "loggedInUser_v1";
 
-const Register = () => {
-  const navigation = useNavigation<RegisterScreenNavigationProp>();
-
+export default function Register() {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const [emailError, setEmailError] = useState("");
-  const [usernameError, setUsernameError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-
- 
   const [secure, setSecure] = useState(true);
 
-  const validateEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
-  const validateUsername = (username: string) => username.trim().length >= 3;
-  const validatePassword = (password: string) => password.length >= 6;
+  const [emailErr, setEmailErr] = useState("");
+  const [userErr, setUserErr] = useState("");
+  const [passErr, setPassErr] = useState("");
+
+  const validate = () => {
+    let ok = true;
+
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setEmailErr("Please enter a valid email.");
+      ok = false;
+    } else setEmailErr("");
+
+    if (username.trim().length < 3) {
+      setUserErr("Username must be 3+ characters.");
+      ok = false;
+    } else setUserErr("");
+
+    if (password.length < 6) {
+      setPassErr("Password must be at least 6 characters.");
+      ok = false;
+    } else setPassErr("");
+
+    return ok;
+  };
 
   const handleRegister = async () => {
-    let valid = true;
+    if (!validate()) return;
 
-    if (!validateEmail(email)) {
-      setEmailError("Please enter a valid email.");
-      valid = false;
-    } else setEmailError("");
-
-    if (!validateUsername(username)) {
-      setUsernameError("Username must be at least 3 characters.");
-      valid = false;
-    } else setUsernameError("");
-
-    if (!validatePassword(password)) {
-      setPasswordError("Password must be at least 6 characters.");
-      valid = false;
-    } else setPasswordError("");
-
-    if (!valid) return;
-
-    const newUser: User = { email: email.trim(), username: username.trim(), password };
+    const newUser: User = {
+      email: email.trim(),
+      username: username.trim(),
+      password,
+    };
 
     try {
       const raw = await AsyncStorage.getItem(USERS_KEY);
@@ -84,196 +67,82 @@ const Register = () => {
 
       await AsyncStorage.setItem(USERS_KEY, JSON.stringify([...users, newUser]));
       await AsyncStorage.setItem(LOGGED_IN_KEY, JSON.stringify(newUser));
-      navigation.navigate("Notes");
+
+      
+      window.location.href = "/Notes";
+
     } catch (error) {
-      console.error(error);
-      Alert.alert("Error", "Something went wrong while saving your account.");
+      Alert.alert("Error", "Something went wrong.");
+      console.log(error);
     }
   };
-
-  const renderInput = (
-    iconName: string,
-    placeholder: string,
-    value: string,
-    onChangeText: (text: string) => void,
-    isPassword = false
-  ) => (
-    <View
-      style={[
-        styles.inputBox,
-        (isPassword && passwordError) ||
-        (!isPassword && ((placeholder === "Email" && emailError) || (placeholder === "Username" && usernameError)))
-          ? styles.errorBorder
-          : null,
-      ]}
-    >
-      <Icon name={iconName} size={18} style={styles.leftIcon} />
-      <TextInput
-        style={styles.inputField}
-        placeholder={placeholder}
-        placeholderTextColor="#94a3b8"
-        value={value}
-        onChangeText={onChangeText}
-        secureTextEntry={isPassword ? secure : false}
-        autoCapitalize="none"
-      />
-
-      {isPassword && (
-        <TouchableOpacity
-          onPress={() => setSecure((s) => !s)}
-          activeOpacity={0.8}
-          style={styles.showBtnWrap}
-        >
-          <Text style={styles.showBtnText}>{secure ? "Show" : "Hide"}</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Create Account</Text>
 
       
-      <Text style={styles.label}>Email</Text>
-      {renderInput("envelope", "Email", email, setEmail)}
-      {emailError ? <Text style={styles.error}>{emailError}</Text> : null}
+      <IconInput
+        label="Email"
+        placeholder="Enter email"
+        icon="envelope"
+        value={email}
+        onChangeText={setEmail}
+        error={emailErr}
+      />
 
       
-      <Text style={[styles.label, { marginTop: 8 }]}>Username</Text>
-      {renderInput("user", "Username", username, setUsername)}
-      {usernameError ? <Text style={styles.error}>{usernameError}</Text> : null}
+      <IconInput
+        label="Username"
+        placeholder="Enter username"
+        icon="user"
+        value={username}
+        onChangeText={setUsername}
+        error={userErr}
+      />
 
       
-      <Text style={[styles.label, { marginTop: 8 }]}>Password</Text>
-      {renderInput("lock", "Password", password, setPassword, true)}
-      {passwordError ? <Text style={styles.error}>{passwordError}</Text> : null}
+      <IconInput
+        label="Password"
+        placeholder="Enter password"
+        icon="lock"
+        secure={secure}
+        value={password}
+        onChangeText={setPassword}
+        error={passErr}
+        rightElement={
+          <TouchableOpacity onPress={() => setSecure((s) => !s)}>
+            <Text style={styles.showBtn}>{secure ? "Show" : "Hide"}</Text>
+          </TouchableOpacity>
+        }
+      />
 
-      
-      <TouchableOpacity style={styles.button} onPress={handleRegister} activeOpacity={0.9}>
-        <Text style={styles.buttonText}>
-          <Icon name="user-plus" size={16} color="#fff" />  Register
-        </Text>
-      </TouchableOpacity>
+     
+      <PrimaryButton text="Register" onPress={handleRegister} />
 
-      
-      <View style={styles.row}>
-        <Text style={styles.small}>Already have an account? </Text>
-        <Link href="/login" style={styles.link}>
-          Login
-        </Link>
-      </View>
+     
+      <RowLink text="Already have an account? " linkText="Login" href="/login" />
     </View>
   );
-};
-
-export default Register;
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    padding: 20,
     backgroundColor: "#0f1724",
+    padding: 20,
+    justifyContent: "center",
   },
   title: {
+    color: "#fff",
     fontSize: 28,
     fontWeight: "600",
-    marginBottom: 20,
+    marginBottom: 30,
     textAlign: "center",
+  },
+  showBtn: {
     color: "#fff",
-  },
-
-  
-  label: {
-    color: "#cbd5e1",
-    fontSize: 13,
-    marginBottom: 6,
-  },
-
-  
-  inputBox: {
-    position: "relative",
-    width: "100%",
-    marginBottom: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#1b2433", // visible box background
-    borderRadius: 30,
-    borderWidth: 2,
-    borderColor: "#ff3e6c",
-    paddingVertical: 12,
-    paddingLeft: 44, 
-    paddingRight: 50,
-    height: 50,
-  },
-  leftIcon: {
-    position: "absolute",
-    left: 14,
-    fontSize: 18,
-    color: "#fff",
-  },
-  inputField: {
-    flex: 1,
-    fontSize: 16,
-    color: "#fff",
-    padding: 0,
-    margin: 0,
-  },
-
- 
-  showBtnWrap: {
-    position: "absolute",
-    right: 7,
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 6,
-  },
-  showBtnText: {
     fontSize: 12,
-    color: "#fff",
-    fontWeight: "600",
-  },
-
- 
-  error: {
-    color: "#fb7185",
-    marginBottom: 8,
-    fontSize: 13,
-  },
-  errorBorder: {
-    borderColor: "#fb7185",
-  },
-
- 
-  button: {
-    backgroundColor: "#ff3e6c",
-    paddingVertical: 15,
-    borderRadius: 30,
-    marginTop: 14,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-
-  
-  row: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 20,
-  },
-  small: {
-    color: "#94a3b8",
-    fontSize: 14,
-  },
-  link: {
-    color: "#ff3e6c",
-    fontWeight: "600",
-    fontSize: 14,
-    marginLeft: 6,
+    marginRight: -39,
   },
 });

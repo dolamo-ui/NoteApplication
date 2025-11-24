@@ -1,18 +1,13 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-} from "react-native";
+import { View, Text, StyleSheet, Alert, TouchableOpacity } from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { FontAwesome } from "@expo/vector-icons";
-import { Link } from "expo-router";
+
+import IconInput from "@/components/IconInput";
+import PrimaryButton from "@/components/PrimaryButton";
+import RowLink from "@/components/RowLink";
 
 type RootStackParamList = {
   Login: undefined;
@@ -43,21 +38,23 @@ export default function Login() {
   const [touched, setTouched] = useState(false);
   const [isValid, setIsValid] = useState(false);
 
-  useEffect(() => {
-    setIsValid(validateEmail(email) && password.length >= 6);
-  }, [email, password]);
-
+  
   function validateEmail(e: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
   }
 
+  useEffect(() => {
+    setIsValid(validateEmail(email) && password.length >= 6);
+  }, [email, password]);
+
+  
   const handleSubmit = async () => {
     setTouched(true);
 
     if (!isValid) {
       Alert.alert(
         "Invalid credentials",
-        "Please enter a valid email and a password of at least 6 characters."
+        "Please enter a valid email and a password with at least 6 characters."
       );
       return;
     }
@@ -80,8 +77,8 @@ export default function Login() {
           LOGGED_IN_KEY,
           JSON.stringify(matchedUser)
         );
-
         Alert.alert("Success", "Logged in successfully!");
+
         navigation.navigate("Notes");
       } else {
         Alert.alert("Error", "Email or password is incorrect.");
@@ -97,67 +94,50 @@ export default function Login() {
       <Text style={styles.title}>Welcome — Notes</Text>
 
      
-      <Text style={styles.label}>Email</Text>
-      <View style={[styles.inputBox, touched && !validateEmail(email) ? styles.errorBorder : null]}>
-        <FontAwesome name="envelope" style={styles.leftIcon} />
-        <TextInput
-          style={styles.inputField}
-          placeholder="you@example.com"
-          placeholderTextColor="#94a3b8"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-          onBlur={() => setTouched(true)}
-        />
-      </View>
-
-      {touched && !validateEmail(email) && (
-        <Text style={styles.errorText}>Enter a valid email address.</Text>
-      )}
+      <IconInput
+        label="Email"
+        placeholder="you@example.com"
+        value={email}
+        onChangeText={setEmail}
+        onBlur={() => setTouched(true)}
+        icon="envelope"
+        error={
+          touched && !validateEmail(email)
+            ? "Enter a valid email address."
+            : ""
+        }
+      />
 
       
-      <Text style={[styles.label, { marginTop: 12 }]}>Password</Text>
-      <View style={[styles.inputBox, touched && password.length < 6 ? styles.errorBorder : null]}>
-        <FontAwesome name="lock" style={styles.leftIcon} />
-
-        <TextInput
-          style={styles.inputField}
-          placeholder="Password"
-          placeholderTextColor="#94a3b8"
-          secureTextEntry={secure}
-          value={password}
-          onChangeText={setPassword}
-          onBlur={() => setTouched(true)}
-        />
-
-        <TouchableOpacity onPress={() => setSecure(!secure)}>
-          <Text style={styles.showBtn}>{secure ? "Show" : "Hide"}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {touched && password.length < 6 && (
-        <Text style={styles.errorText}>
-          Password must be at least 6 characters.
-        </Text>
-      )}
+      <IconInput
+        label="Password"
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        onBlur={() => setTouched(true)}
+        secure={secure}
+        icon="lock"
+        error={
+          touched && password.length < 6
+            ? "Password must be at least 6 characters."
+            : ""
+        }
+        rightElement={
+          <TouchableOpacity onPress={() => setSecure(!secure)}>
+            <Text style={styles.showBtn}>{secure ? "Show" : "Hide"}</Text>
+          </TouchableOpacity>
+        }
+      />
 
       
-      <TouchableOpacity
-        style={[styles.button, !isValid && styles.buttonDisabled]}
-        onPress={handleSubmit}
-        disabled={!isValid}
-      >
-        <Text style={styles.buttonText}>Login</Text>
-      </TouchableOpacity>
+      <PrimaryButton text="Login" onPress={handleSubmit} disabled={!isValid} />
 
       
-      <View style={styles.row}>
-        <Text style={styles.small}>Don't have an account? </Text>
-        <Link href="/Register" style={styles.link}>
-          Sign Up
-        </Link>
-      </View>
+      <RowLink
+        text="Don't have an account? "
+        linkText="Sign Up"
+        href="/Register"
+      />
     </View>
   );
 }
@@ -169,7 +149,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 20,
   },
-
   title: {
     color: "#fff",
     fontSize: 24,
@@ -177,90 +156,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 25,
   },
-
-  label: {
-    color: "#cbd5e1",
-    fontSize: 14,
-    marginBottom: 6,
-  },
-
-  inputBox: {
-    position: "relative",
-    width: "100%",
-    marginBottom: 12,
-    flexDirection: "row",
-    alignItems: "center",
-   backgroundColor: "#1b2433", 
-    borderRadius: 30,
-    borderWidth: 2,
-    borderColor: "#ff3e6c",
-    paddingVertical: 12,
-    paddingLeft: 40,
-    paddingRight: 45,
-  },
-
-  inputField: {
-    flex: 1,
-    color: "#fff",
-    fontSize: 15,
-  },
-
-  leftIcon: {
-    position: "absolute",
-    left: 14,
-    fontSize: 18,
-    color: "#fff",
-  },
-
   showBtn: {
-    position: "absolute",
-    right: 1,
-    top: -7,
+    color: "#fff",
     fontSize: 12,
-    color: "#fff",
-  },
-
-  errorText: {
-    color: "#fb7185",
-    marginBottom: 10,
-    fontSize: 13,
-  },
-
-  errorBorder: {
-    borderColor: "#fb7185",
-  },
-
-  button: {
-    backgroundColor: "#ff3e6c",
-    width: "100%",
-    paddingVertical: 14,
-    borderRadius: 30,
-    alignItems: "center",
-    marginTop: 10,
-  },
-
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
-  row: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 18,
-  },
-
-  small: {
-    color: "#94a3b8",
-  },
-
-  link: {
-    color: "#ff3e6c",
-    fontWeight: "600",
+    marginRight: -35,
   },
 });
