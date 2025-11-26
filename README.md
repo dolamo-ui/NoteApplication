@@ -18,7 +18,7 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 ## 📱 Download the App
 Click below to download the latest APK:
 
-👉 YOUR_GOOGLE_DRIVE_LINK_HERE= https://drive.google.com/file/d/1dTZ9FEkNSDqfFnj_j414eqZuOcXzhOUg/view?usp=drivesdk
+👉 YOUR_GOOGLE_DRIVE_LINK_HERE= https://drive.google.com/file/d/1mOAOBZFOVpX_-lGJjNwWpbZPehKB6rFs/view?usp=drivesdk
 
 
 
